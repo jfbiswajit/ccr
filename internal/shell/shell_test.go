@@ -11,7 +11,7 @@ func TestWriteNeutralEnvSh(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "env.sh")
 
-	if err := WriteEnvFile(path, false, ""); err != nil {
+	if err := WriteEnvFile(path, false, "", nil); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -33,7 +33,7 @@ func TestWriteEnabledEnvSh(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "env.sh")
 
-	if err := WriteEnvFile(path, true, "sk-or-test-key"); err != nil {
+	if err := WriteEnvFile(path, true, "sk-or-test-key", nil); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -48,6 +48,39 @@ func TestWriteEnabledEnvSh(t *testing.T) {
 	}
 	if !strings.Contains(content, `export ANTHROPIC_API_KEY=""`) {
 		t.Errorf("enabled env.sh missing blank ANTHROPIC_API_KEY")
+	}
+}
+
+func TestWriteEnvShWithModelOverride(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "env.sh")
+
+	overrides := map[string]string{"sonnet": "anthropic/claude-haiku-4-5"}
+	if err := WriteEnvFile(path, true, "sk-or-key", overrides); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	data, _ := os.ReadFile(path)
+	content := string(data)
+
+	if !strings.Contains(content, `export ANTHROPIC_DEFAULT_SONNET_MODEL="anthropic/claude-haiku-4-5"`) {
+		t.Errorf("env.sh missing model override, got:\n%s", content)
+	}
+}
+
+func TestWriteEnvShNoOverrides(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "env.sh")
+
+	if err := WriteEnvFile(path, true, "sk-or-key", nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	data, _ := os.ReadFile(path)
+	content := string(data)
+
+	if strings.Contains(content, "ANTHROPIC_DEFAULT_SONNET_MODEL") {
+		t.Error("env.sh should not contain model override when none set")
 	}
 }
 

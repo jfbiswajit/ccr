@@ -46,7 +46,7 @@ func runEnable(cmd *cobra.Command, args []string) error {
 	}
 
 	// Rewrite env file with OpenRouter vars
-	if err := shell.WriteEnvFile(envFilePath(), true, cfg.APIKey); err != nil {
+	if err := shell.WriteEnvFile(envFilePath(), true, cfg.APIKey, cfg.ModelOverrides); err != nil {
 		return fmt.Errorf("failed to write env file: %w", err)
 	}
 

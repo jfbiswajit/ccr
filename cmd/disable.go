@@ -36,7 +36,7 @@ func runDisable(cmd *cobra.Command, args []string) error {
 	}
 
 	// Rewrite env file to neutral (unsets only)
-	if err := shell.WriteEnvFile(envFilePath(), false, ""); err != nil {
+	if err := shell.WriteEnvFile(envFilePath(), false, "", nil); err != nil {
 		return fmt.Errorf("failed to write env file: %w", err)
 	}
 

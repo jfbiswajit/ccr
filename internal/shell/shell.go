@@ -8,46 +8,70 @@ import (
 	"strings"
 )
 
+var modelEnvVars = map[string]string{
+	"sonnet":  "ANTHROPIC_DEFAULT_SONNET_MODEL",
+	"opus":    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+	"haiku":   "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+	"subagent": "CLAUDE_CODE_SUBAGENT_MODEL",
+}
+
 // WriteEnvFile writes ~/.ccr/env.sh (or env.ps1 on Windows).
 // enabled=true writes OpenRouter vars; enabled=false writes neutral unsets.
-func WriteEnvFile(path string, enabled bool, apiKey string) error {
+// modelOverrides maps slot name (sonnet/opus/haiku/subagent) to model ID.
+func WriteEnvFile(path string, enabled bool, apiKey string, modelOverrides map[string]string) error {
 	var content string
 
 	if runtime.GOOS == "windows" {
-		content = windowsEnvContent(enabled, apiKey)
+		content = windowsEnvContent(enabled, apiKey, modelOverrides)
 	} else {
-		content = unixEnvContent(enabled, apiKey)
+		content = unixEnvContent(enabled, apiKey, modelOverrides)
 	}
 
 	return os.WriteFile(path, []byte(content), 0644)
 }
 
-func unixEnvContent(enabled bool, apiKey string) string {
+func unixEnvContent(enabled bool, apiKey string, overrides map[string]string) string {
+	var b strings.Builder
+	b.WriteString("# Managed by ccr — do not edit manually\n")
+
 	if enabled {
-		return fmt.Sprintf(`# Managed by ccr — do not edit manually
-export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
-export ANTHROPIC_AUTH_TOKEN="%s"
-export ANTHROPIC_API_KEY=""
-`, apiKey)
+		fmt.Fprintf(&b, "export ANTHROPIC_BASE_URL=\"https://openrouter.ai/api\"\n")
+		fmt.Fprintf(&b, "export ANTHROPIC_AUTH_TOKEN=\"%s\"\n", apiKey)
+		fmt.Fprintf(&b, "export ANTHROPIC_API_KEY=\"\"\n")
+	} else {
+		b.WriteString("unset ANTHROPIC_BASE_URL\n")
+		b.WriteString("unset ANTHROPIC_AUTH_TOKEN\n")
 	}
-	return `# Managed by ccr — do not edit manually
-unset ANTHROPIC_BASE_URL
-unset ANTHROPIC_AUTH_TOKEN
-`
+
+	for slot, modelID := range overrides {
+		if envVar, ok := modelEnvVars[slot]; ok {
+			fmt.Fprintf(&b, "export %s=\"%s\"\n", envVar, modelID)
+		}
+	}
+
+	return b.String()
 }
 
-func windowsEnvContent(enabled bool, apiKey string) string {
+func windowsEnvContent(enabled bool, apiKey string, overrides map[string]string) string {
+	var b strings.Builder
+	b.WriteString("# Managed by ccr — do not edit manually\n")
+
 	if enabled {
-		return fmt.Sprintf(`# Managed by ccr — do not edit manually
-$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
-$env:ANTHROPIC_AUTH_TOKEN = "%s"
-$env:ANTHROPIC_API_KEY = ""
-`, apiKey)
+		fmt.Fprintf(&b, "$env:ANTHROPIC_BASE_URL = \"https://openrouter.ai/api\"\n")
+		fmt.Fprintf(&b, "$env:ANTHROPIC_AUTH_TOKEN = \"%s\"\n", apiKey)
+		fmt.Fprintf(&b, "$env:ANTHROPIC_API_KEY = \"\"\n")
+	} else {
+		b.WriteString("Remove-Item Env:ANTHROPIC_BASE_URL -ErrorAction SilentlyContinue\n")
+		b.WriteString("Remove-Item Env:ANTHROPIC_AUTH_TOKEN -ErrorAction SilentlyContinue\n")
 	}
-	return `# Managed by ccr — do not edit manually
-Remove-Item Env:ANTHROPIC_BASE_URL -ErrorAction SilentlyContinue
-Remove-Item Env:ANTHROPIC_AUTH_TOKEN -ErrorAction SilentlyContinue
-`
+
+	for slot, modelID := range overrides {
+		if envVar, ok := modelEnvVars[slot]; ok {
+			fmt.Fprintf(&b, "$env:%s = \"%s\"\n", envVar, modelID)
+		}
+	}
+
+	return b.String()
 }
 
 // DetectShell returns the shell name and the recommended profile file path.
@@ -65,7 +89,6 @@ func DetectShell() (name string, profile string) {
 	case "zsh":
 		return "zsh", filepath.Join(home, ".zshrc")
 	case "bash":
-		// macOS bash uses .bash_profile; Linux uses .bashrc
 		if runtime.GOOS == "darwin" {
 			return "bash", filepath.Join(home, ".bash_profile")
 		}

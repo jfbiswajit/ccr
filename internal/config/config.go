@@ -10,6 +10,7 @@ type Config struct {
 	APIKey             string                 `json:"apiKey"`
 	ActiveProvider     string                 `json:"activeProvider"`
 	OriginalStatusLine map[string]interface{} `json:"originalStatusLine,omitempty"`
+	ModelOverrides     map[string]string      `json:"modelOverrides,omitempty"`
 }
 
 func configFilePath(dir string) string {
@@ -54,6 +55,9 @@ func SaveConfig(dir string, cfg *Config) error {
 	}
 	if cfg.OriginalStatusLine != nil {
 		existing.OriginalStatusLine = cfg.OriginalStatusLine
+	}
+	if cfg.ModelOverrides != nil {
+		existing.ModelOverrides = cfg.ModelOverrides
 	}
 
 	data, err := json.MarshalIndent(existing, "", "  ")

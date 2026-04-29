@@ -103,7 +103,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	// Write neutral env file
 	envPath := envFilePath()
-	if err := shell.WriteEnvFile(envPath, false, ""); err != nil {
+	if err := shell.WriteEnvFile(envPath, false, "", nil); err != nil {
 		return fmt.Errorf("failed to write env file: %w", err)
 	}
 
