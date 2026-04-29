@@ -57,6 +57,15 @@ After `ccr enable` or `ccr disable`, run `source ~/.ccr/env.sh` in your current 
 - A timestamped backup of `~/.claude/settings.json` is saved to `~/.ccr/backups/` before the first change
 - When enabled, Claude Code shows live OpenRouter cost tracking in the statusline
 
+## Uninstall
+
+Run `ccr disable` first, then:
+
+```sh
+sudo rm /usr/local/bin/ccr
+rm -rf ~/.ccr
+```
+
 ## Requirements
 
 - [Claude Code](https://claude.ai/code)
