@@ -6,12 +6,14 @@ import (
 
 	"github.com/biswajit/ccr/internal/config"
 	"github.com/biswajit/ccr/internal/openrouter"
+	"github.com/biswajit/ccr/internal/shell"
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 )
 
 var modelsCmd = &cobra.Command{
 	Use:   "models [search]",
-	Short: "List available OpenRouter models",
+	Short: "List and select OpenRouter models",
 	Args:  cobra.MaximumNArgs(1),
 	RunE:  runModels,
 }
@@ -47,22 +49,89 @@ func runModels(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Header
+	// Print table
 	fmt.Printf("%-50s %-8s %-14s %-14s\n", "Model ID", "Context", "Input $/M", "Output $/M")
 	fmt.Println(strings.Repeat("-", 90))
-
 	for _, m := range models {
-		ctx := formatContext(m.ContextLength)
-		in := fmt.Sprintf("$%.4f", m.InputCost*1_000_000)
-		out := fmt.Sprintf("$%.4f", m.OutputCost*1_000_000)
-
 		id := m.ID
 		if query != "" {
 			id = highlight(id, query)
 		}
-		fmt.Printf("%-50s %-8s %-14s %-14s\n", id, ctx, in, out)
+		fmt.Printf("%-50s %-8s %-14s %-14s\n",
+			id,
+			formatContext(m.ContextLength),
+			fmt.Sprintf("$%.4f", m.InputCost*1_000_000),
+			fmt.Sprintf("$%.4f", m.OutputCost*1_000_000),
+		)
 	}
-	fmt.Printf("\n%d model(s)\n", len(models))
+	fmt.Printf("\n%d model(s)\n\n", len(models))
+
+	// Ask if user wants to set one
+	var wantSelect bool
+	huh.NewForm(
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Set a model for a slot?").
+				Value(&wantSelect),
+		),
+	).Run()
+
+	if !wantSelect {
+		return nil
+	}
+
+	// Pick slot
+	var slot string
+	huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Slot").
+				Options(
+					huh.NewOption("sonnet", "sonnet"),
+					huh.NewOption("opus", "opus"),
+					huh.NewOption("haiku", "haiku"),
+					huh.NewOption("subagent", "subagent"),
+				).
+				Value(&slot),
+		),
+	).Run()
+
+	// Pick model from the listed results
+	options := make([]huh.Option[string], len(models))
+	for i, m := range models {
+		options[i] = huh.NewOption(m.ID, m.ID)
+	}
+
+	var modelID string
+	huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Model").
+				Options(options...).
+				Value(&modelID),
+		),
+	).Run()
+
+	if slot == "" || modelID == "" {
+		return nil
+	}
+
+	overrides := cfg.ModelOverrides
+	if overrides == nil {
+		overrides = map[string]string{}
+	}
+	overrides[slot] = modelID
+
+	if err := config.SaveConfig(dir, &config.Config{ModelOverrides: overrides}); err != nil {
+		return err
+	}
+
+	enabled := cfg.ActiveProvider == "openrouter"
+	if err := shell.WriteEnvFile(envFilePath(), enabled, cfg.APIKey, overrides); err != nil {
+		return err
+	}
+
+	fmt.Printf("Done. source %s\n", envFilePath())
 	return nil
 }
 
@@ -80,6 +149,5 @@ func highlight(s, query string) string {
 	if idx < 0 {
 		return s
 	}
-	// Bold the matching portion using ANSI
 	return s[:idx] + "\033[1m" + s[idx:idx+len(query)] + "\033[0m" + s[idx+len(query):]
 }
