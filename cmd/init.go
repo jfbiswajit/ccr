@@ -9,6 +9,7 @@ import (
 	"github.com/biswajit/ccr/internal/config"
 	"github.com/biswajit/ccr/internal/openrouter"
 	"github.com/biswajit/ccr/internal/shell"
+	"github.com/biswajit/ccr/internal/statusline"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 )
@@ -106,6 +107,15 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to write env file: %w", err)
 	}
 
+	// Write statusline files
+	writeStatuslineFn := statusline.WriteFiles
+	if initForce {
+		writeStatuslineFn = statusline.WriteFilesForce
+	}
+	if err := writeStatuslineFn(dir); err != nil {
+		return fmt.Errorf("failed to write statusline: %w", err)
+	}
+
 	// Print instructions
 	shellName, profilePath := shell.DetectShell()
 	sourceCmd := shell.SourceInstruction(envPath)
@@ -116,7 +126,8 @@ func runInit(cmd *cobra.Command, args []string) error {
 		fmt.Println("Original statusLine snapshot saved — will be restored on 'ccr disable'")
 	}
 	fmt.Printf("\nOne-time setup: add this line to your %s (%s):\n\n  %s\n\n", shellName, profilePath, sourceCmd)
-	fmt.Println("Done. Run 'ccr enable' to switch to OpenRouter.")
+	fmt.Println("Statusline scripts written to ~/.ccr/")
+	fmt.Println("\nDone. Run 'ccr enable' to switch to OpenRouter.")
 	return nil
 }
 
