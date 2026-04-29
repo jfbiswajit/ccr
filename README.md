@@ -1,6 +1,6 @@
 # ccr — Claude Code Router
 
-Switch Claude Code between Anthropic and OpenRouter with a single command. When you hit Anthropic's 5-hour limit, `ccr enable` routes through OpenRouter in seconds. `ccr disable` puts everything back exactly as it was.
+Switch Claude Code between Anthropic and OpenRouter with a single command. `ccr enable` routes through OpenRouter in seconds. `ccr disable` puts everything back exactly as it was.
 
 ## Install
 
@@ -41,13 +41,13 @@ Then reload your shell or open a new terminal.
 
 ## Usage
 
-**When you hit the Anthropic 5-hour limit:**
+**Switch to OpenRouter:**
 ```sh
 ccr enable
 source ~/.ccr/env.sh   # or open a new terminal
 ```
 
-**When the limit resets:**
+**Switch back to Anthropic:**
 ```sh
 ccr disable
 source ~/.ccr/env.sh   # or open a new terminal
