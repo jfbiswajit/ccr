@@ -47,7 +47,7 @@ ccr enable
 source ~/.ccr/env.sh   # or open a new terminal
 ```
 
-**When the limit resets** (Anthropic resets every 5 hours from when you first hit it):
+**When the limit resets:**
 ```sh
 ccr disable
 source ~/.ccr/env.sh   # or open a new terminal
