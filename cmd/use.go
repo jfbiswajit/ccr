@@ -30,57 +30,45 @@ func runUse(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("ccr is not initialized. Run 'ccr init' first")
 	}
 
-	// Step 1: pick which slot to configure
-	var slot string
-	slotForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("Which model slot?").
-				Description("Claude Code uses different models for different task types").
-				Options(
-					huh.NewOption("Sonnet  (general coding)", "sonnet"),
-					huh.NewOption("Opus    (complex reasoning)", "opus"),
-					huh.NewOption("Haiku   (quick completions)", "haiku"),
-					huh.NewOption("Subagent (sub-agent tasks)", "subagent"),
-				).
-				Value(&slot),
-		),
-	)
-	if err := slotForm.Run(); err != nil {
-		return err
-	}
-
-	// Step 2: fetch models
-	fmt.Print("Fetching models... ")
+	// Fetch models silently before showing any prompts
 	client := openrouter.NewClient()
 	models, err := client.FetchModels(cfg.APIKey)
 	if err != nil {
 		return fmt.Errorf("failed to fetch models: %w", err)
 	}
-	fmt.Printf("%d available\n", len(models))
 
-	// Build options for picker
+	// Build model options
 	options := make([]huh.Option[string], len(models))
 	for i, m := range models {
-		label := fmt.Sprintf("%-50s  $%.4f / $%.4f per 1M tokens", m.ID, m.InputCost*1_000_000, m.OutputCost*1_000_000)
-		options[i] = huh.NewOption(label, m.ID)
+		options[i] = huh.NewOption(m.ID, m.ID)
 	}
 
-	// Step 3: pick the model
-	var modelID string
-	modelForm := huh.NewForm(
+	var slot, modelID string
+
+	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
-				Title(fmt.Sprintf("Pick a model for %s", slot)).
+				Title("Slot").
+				Options(
+					huh.NewOption("sonnet", "sonnet"),
+					huh.NewOption("opus", "opus"),
+					huh.NewOption("haiku", "haiku"),
+					huh.NewOption("subagent", "subagent"),
+				).
+				Value(&slot),
+		),
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Model").
 				Options(options...).
 				Value(&modelID),
 		),
 	)
-	if err := modelForm.Run(); err != nil {
+
+	if err := form.Run(); err != nil {
 		return err
 	}
 
-	// Save to config
 	overrides := cfg.ModelOverrides
 	if overrides == nil {
 		overrides = map[string]string{}
@@ -88,16 +76,14 @@ func runUse(cmd *cobra.Command, args []string) error {
 	overrides[slot] = modelID
 
 	if err := config.SaveConfig(dir, &config.Config{ModelOverrides: overrides}); err != nil {
-		return fmt.Errorf("failed to save config: %w", err)
+		return err
 	}
 
-	// Rewrite env.sh with updated overrides
 	enabled := cfg.ActiveProvider == "openrouter"
 	if err := shell.WriteEnvFile(envFilePath(), enabled, cfg.APIKey, overrides); err != nil {
-		return fmt.Errorf("failed to update env file: %w", err)
+		return err
 	}
 
-	fmt.Printf("\nSet %s → %s\n", slot, modelID)
-	fmt.Printf("Run: source %s\n", envFilePath())
+	fmt.Printf("Done. source %s\n", envFilePath())
 	return nil
 }
