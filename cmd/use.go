@@ -61,6 +61,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 			huh.NewSelect[string]().
 				Title("Model").
 				Options(options...).
+				Filtering(true).
 				Value(&modelID),
 		),
 	)
