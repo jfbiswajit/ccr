@@ -31,8 +31,7 @@ func runEnable(cmd *cobra.Command, args []string) error {
 	}
 
 	if cfg.ActiveProvider == "openrouter" {
-		fmt.Println("Already using OpenRouter. Nothing to do.")
-		fmt.Printf("\nReminder: source %s\n", envFilePath())
+		fmt.Println("Already enabled.")
 		return nil
 	}
 
@@ -64,8 +63,6 @@ func runEnable(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
-	fmt.Println("Switched to OpenRouter")
-	fmt.Printf("\nRun this in your current terminal:\n\n  source %s\n\n", envFilePath())
-	fmt.Println("New terminal windows will pick it up automatically.")
+	fmt.Printf("OpenRouter enabled. Run: source %s\n", envFilePath())
 	return nil
 }

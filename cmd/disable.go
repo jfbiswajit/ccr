@@ -30,8 +30,7 @@ func runDisable(cmd *cobra.Command, args []string) error {
 	}
 
 	if cfg.ActiveProvider == "anthropic" {
-		fmt.Println("Already using Anthropic. Nothing to do.")
-		fmt.Printf("\nReminder: source %s\n", envFilePath())
+		fmt.Println("Already disabled.")
 		return nil
 	}
 
@@ -50,8 +49,6 @@ func runDisable(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
-	fmt.Println("Switched to Anthropic")
-	fmt.Printf("\nRun this in your current terminal:\n\n  source %s\n\n", envFilePath())
-	fmt.Println("New terminal windows will pick it up automatically.")
+	fmt.Printf("Anthropic restored. Run: source %s\n", envFilePath())
 	return nil
 }
