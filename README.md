@@ -1,6 +1,6 @@
 # ccr — Claude Code Router
 
-Switch Claude Code between Anthropic and OpenRouter with a single command. `ccr enable` routes through OpenRouter in seconds. `ccr disable` puts everything back exactly as it was.
+Switch Claude Code between Anthropic and OpenRouter with a single command.
 
 ## Install
 
@@ -24,63 +24,38 @@ curl -L https://github.com/jfbiswajit/ccr/releases/latest/download/ccr-linux-amd
 Invoke-WebRequest -Uri https://github.com/jfbiswajit/ccr/releases/latest/download/ccr-windows-amd64.exe -OutFile ccr.exe
 ```
 
+**Update:** re-run the same install command to get the latest version.
+
 ## Setup (one time)
 
 ```sh
 ccr init
 ```
 
-Paste your OpenRouter API key when prompted — get one at [openrouter.ai/keys](https://openrouter.ai/keys). It validates the key, sets everything up, and prints one line to add to your shell profile:
+Paste your OpenRouter API key when prompted — get one at [openrouter.ai/keys](https://openrouter.ai/keys).
 
+Then add the printed line to your shell profile:
 ```sh
-# Add to ~/.zshrc or ~/.bashrc (printed by ccr init)
 source "$HOME/.ccr/env.sh"
 ```
 
-Then reload your shell or open a new terminal.
+## Commands
 
-## Usage
+| Command | Description |
+|---|---|
+| `ccr init` | Set up ccr with your OpenRouter API key |
+| `ccr enable` | Switch Claude Code to OpenRouter |
+| `ccr disable` | Switch Claude Code back to Anthropic |
+| `ccr status` | Show which provider is active |
 
-**Switch to OpenRouter:**
-```sh
-ccr enable
-source ~/.ccr/env.sh   # or open a new terminal
-```
-
-**Switch back to Anthropic:**
-```sh
-ccr disable
-source ~/.ccr/env.sh   # or open a new terminal
-```
-
-**Check which provider is active:**
-```sh
-ccr status
-```
-
-**Browse available OpenRouter models:**
-```sh
-ccr models
-ccr models claude    # filter by keyword
-```
+After `ccr enable` or `ccr disable`, run `source ~/.ccr/env.sh` in your current terminal (or open a new one).
 
 ## How it works
 
-- **Non-destructive** — only the `statusLine` field in `~/.claude/settings.json` is ever changed. Your hooks, permissions, plugins, and all other settings are untouched.
-- **Fully reversible** — your original `statusLine` is snapshotted during `init` and restored exactly when you run `ccr disable`.
-- **Safe** — a timestamped backup of `~/.claude/settings.json` is written to `~/.ccr/backups/` before the first change.
-- **Statusline** — when enabled, Claude Code shows live OpenRouter cost tracking at the bottom of the screen.
-
-## What gets installed
-
-```
-~/.ccr/
-├── config.json          # API key and current state
-├── env.sh               # env vars managed by ccr (rewritten on enable/disable)
-├── statusline.ts        # OpenRouter cost tracking statusline
-├── statusline.sh        # wrapper to run statusline.ts
-└── backups/             # timestamped backups of ~/.claude/settings.json
-```
+- Only the `statusLine` field in `~/.claude/settings.json` is changed — hooks, permissions, and plugins are untouched
+- Your original `statusLine` is restored exactly when you run `ccr disable`
+- A timestamped backup of `~/.claude/settings.json` is saved to `~/.ccr/backups/` before the first change
+- When enabled, Claude Code shows live OpenRouter cost tracking in the statusline
 
 ## Requirements
 
@@ -90,17 +65,16 @@ ccr models claude    # filter by keyword
 ## Windows
 
 After `ccr init`, add this to your PowerShell profile instead:
-
 ```powershell
 . "$HOME\.ccr\env.ps1"
 ```
 
-After `ccr enable` or `ccr disable`, run:
+After `ccr enable` or `ccr disable`:
 ```powershell
 . $HOME\.ccr\env.ps1
 ```
 
-If you get a script execution error, run this once in PowerShell as admin:
+If you get a script execution error, run once as admin:
 ```powershell
 Set-ExecutionPolicy RemoteSigned
 ```
